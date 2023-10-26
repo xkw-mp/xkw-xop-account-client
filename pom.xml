@@ -4,7 +4,7 @@
 
     <groupId>com.xkw.xop</groupId>
     <artifactId>xkw-xop-account-client</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
 
     <name>xkw-xop-account-client</name>
@@ -22,6 +22,7 @@
     </developers>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
