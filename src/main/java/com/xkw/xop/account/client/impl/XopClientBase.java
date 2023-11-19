@@ -3,20 +3,20 @@
  */
 package com.xkw.xop.account.client.impl;
 
+import com.xkw.xop.account.client.hmac.HmacConst;
+import com.xkw.xop.account.client.hmac.HmacResult;
+import com.xkw.xop.account.client.hmac.HmacUtils;
+import com.xkw.xop.account.client.hmac.HmacUtilsV2;
+import com.xkw.xop.account.client.hmac.XopHmacVersionEnum;
 import com.xkw.xop.account.client.request.impl.XopHttpRequestBase;
 import com.xkw.xop.account.client.response.XopHttpResponse;
 import com.xkw.xop.account.client.response.impl.XopHttpResponseImpl;
 import com.xkw.xop.account.client.utils.XopClientUtils;
-import com.xkw.xop.account.client.hmac.HmacConst;
-import com.xkw.xop.account.client.hmac.HmacResult;
-import com.xkw.xop.account.client.hmac.HmacUtils;
 import kong.unirest.Config;
 import kong.unirest.HttpMethod;
 import kong.unirest.HttpRequestWithBody;
 import kong.unirest.HttpResponse;
 import kong.unirest.UnirestInstance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,21 +33,21 @@ import static com.xkw.xop.account.client.utils.Constants.CONTENT_TYPE_JSON;
  */
 public class XopClientBase {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(XopClientBase.class);
-
     protected final String gatewayHost;
     protected final String appId;
     protected final String secret;
 
     protected final UnirestInstance client;
+    protected final XopHmacVersionEnum hmacVersionEnum;
 
-    public XopClientBase(String gatewayHost, String appId, String secret, Config config) {
+    public XopClientBase(String gatewayHost, String appId, String secret, Config config, XopHmacVersionEnum hmacVersionEnum) {
         this.gatewayHost = gatewayHost;
         this.appId = appId;
         this.secret = secret;
         if (config == null) {
             config = new Config();
         }
+        this.hmacVersionEnum = hmacVersionEnum;
         client = new UnirestInstance(config);
     }
 
@@ -61,18 +61,11 @@ public class XopClientBase {
             throw new IllegalArgumentException("http uri can NOT be null");
         }
         HttpMethod method = request.getHttpMethod();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("XOP {}: {}, queryParams:{}", method.name(), request.getUri(), request.getQueryParams());
-        }
         String fullUri = gatewayHost + request.getUri();
         HttpResponse<String> response;
 
         String requestId = XopClientUtils.getRequestId();
         headerMap.put(HmacConst.KEY_REQUEST_ID, requestId);
-        long startTime = 0;
-        if (LOGGER.isDebugEnabled()) {
-            startTime = System.currentTimeMillis();
-        }
         // 校验CustomerHeader
         if (customHeaderMap != null && customHeaderMap.size() > 0) {
             Map<String, String> wholeHeaderMap = new HashMap<>(headerMap);
@@ -99,16 +92,6 @@ public class XopClientBase {
                 response = req.body(bodyString).asString();
             }
         }
-        if (LOGGER.isDebugEnabled()) {
-            int status = XopClientUtils.getStatus(response);
-            if (XopClientUtils.statusSuccess(status)) {
-                LOGGER.debug("XOP SendRequest success, time spent: {} ms, response body: {},",
-                    System.currentTimeMillis() - startTime, XopClientUtils.getResponseBody(response));
-            } else {
-                LOGGER.debug("XOP SendRequest failed, status: {}, requestId: {}, time spent: {} ms, body:{}", status,
-                    requestId, System.currentTimeMillis() - startTime, XopClientUtils.getResponseBody(response));
-            }
-        }
         return new XopHttpResponseImpl<>(response, requestId);
     }
 
@@ -118,6 +101,9 @@ public class XopClientBase {
             map.putAll(queryParams);
         }
         map.put(HmacConst.KEY_URL, uri);
+        if (XopHmacVersionEnum.V2 == this.hmacVersionEnum) {
+            return HmacUtilsV2.sign(appId, secret, map, bodyString);
+        }
         return HmacUtils.sign(appId, secret, map, bodyString);
     }
 
@@ -125,7 +111,7 @@ public class XopClientBase {
         Map<String, String> headerMap = new HashMap<>(8);
         headerMap.put(HmacConst.KEY_APP_ID, appId);
         headerMap.put(HmacConst.KEY_TIMESTAMP, result.getTimeStamp().toString());
-        headerMap.put(HmacConst.KEY_SIGN, result.getSign());
+        headerMap.put(hmacVersionEnum.getSignHeader(), result.getSign());
         headerMap.put(HmacConst.KEY_NONCE, result.getNonce());
         headerMap.put("Content-Type", CONTENT_TYPE_JSON);
         return headerMap;

@@ -6,8 +6,10 @@ package com.xkw.xop.account.client.hmac;
 /**
  * HmacConst
  * XOP-HMAC算法所用常量
+ *
  * @author Wendy
  */
+@SuppressWarnings("unused")
 public class HmacConst {
     /**
      * 请求发起时的时间戳
@@ -17,6 +19,10 @@ public class HmacConst {
      * HMAC签名
      */
     public static final String KEY_SIGN = "Xop-Sign";
+    /**
+     * HMAC签名，V2，使用hmac-sha256
+     */
+    public static final String KEY_SIGN_V2 = "Xop-Sign-V2";
     /**
      * 防止重放攻击的随机串
      */
@@ -34,22 +40,19 @@ public class HmacConst {
      */
     public static final String REQUEST_BODY  = "xop_body";
     /**
+     * 请求跟踪Id
+     */
+    public static final String KEY_REQUEST_ID = "X-Request-Id";
+    /**
      * 设备请求的accessId
      */
     public static final String KEY_DEVICE_APP_ID  = "Xop-Device-App-Id";
-
     /**
      * 设备请求的Token
      */
     public static final String KEY_DEVICE_TOKEN  = "Xop-Device-Token";
-
     /**
      * 设备请求的设备包tag
      */
     public static final String KEY_DEVICE_PACKAGE_TAG = "Xop-Device-Package-Tag";
-    /**
-     * 请求跟踪Id
-     */
-    public static final String KEY_REQUEST_ID = "X-Request-Id";
-
 }

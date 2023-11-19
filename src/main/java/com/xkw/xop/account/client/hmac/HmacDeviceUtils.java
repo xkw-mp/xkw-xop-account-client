@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.xkw.xop.account.client.hmac.HmacUtils.getSignatureString;
-
 /**
  * HmacDeviceUtils
  * XOP设备对接签名工具
@@ -35,10 +33,17 @@ public class HmacDeviceUtils {
      */
     public static HmacResult sign(String appId, String secret, String deviceAppId, String token, Long timeStamp, String nonce
             , final Map<String, ?> urlParam, String requestBodyStr) throws RuntimeException {
+            return sign(appId, secret, deviceAppId, token, timeStamp, nonce, urlParam, requestBodyStr, HmacConst.KEY_SIGN
+                , HmacUtils::getSignatureString);
+        }
+
+    protected static HmacResult sign(String appId, String secret, String deviceAppId, String token, Long timeStamp, String nonce
+        , final Map<String, ?> urlParam, String requestBodyStr, String signHeader, SignatureFunction signatureFunction) throws RuntimeException {
+
         Map<String, Object> map = new HashMap<>(Optional.ofNullable(urlParam).map(Map::size).orElse(0) + 8);
         Optional.ofNullable(urlParam).ifPresent(map::putAll);
 
-        map.remove(HmacConst.KEY_SIGN);
+        XopHmacVersionEnum.clearSignFromMap(map);
 
         map.put(HmacConst.KEY_APP_ID, appId);
         map.put(HmacConst.KEY_TIMESTAMP, timeStamp);
@@ -46,13 +51,13 @@ public class HmacDeviceUtils {
         map.put(HmacConst.KEY_DEVICE_TOKEN, token);
         map.put(HmacConst.KEY_NONCE, nonce);
 
-        String sha1Str = getSignatureString(map, secret, requestBodyStr);
-        map.put(HmacConst.KEY_SIGN, sha1Str);
+        String sha1Str = signatureFunction.apply(map, secret, requestBodyStr);
+        map.put(signHeader, sha1Str);
         return new HmacResult(timeStamp, sha1Str, nonce);
     }
 
     /**
-     * 请求验签
+     * 验证签名
      *
      * @param parameters     请求参数
      * @param secret         请求秘钥
@@ -61,9 +66,15 @@ public class HmacDeviceUtils {
      * @throws RuntimeException SHA1签名异常
      */
     public static boolean validateRequest(final Map<String, ?> parameters, String secret, String requestBodyStr) throws RuntimeException {
+        return validateRequest(parameters, secret, requestBodyStr, HmacConst.KEY_SIGN, HmacUtils::getSignatureString);
+    }
+
+    protected static boolean validateRequest(final Map<String, ?> parameters, String secret, String requestBodyStr
+        , String signHeader, SignatureFunction signatureFunction) throws RuntimeException {
         Map<String, Object> map = new HashMap<>(parameters);
-        String sign = (String) map.remove(HmacConst.KEY_SIGN);
-        String md5Str = getSignatureString(map, secret, requestBodyStr);
-        return md5Str.equalsIgnoreCase(sign);
+        String sign = (String)map.remove(signHeader);
+        XopHmacVersionEnum.clearSignFromMap(map);
+        String signStr = signatureFunction.apply(map, secret, requestBodyStr);
+        return signStr.equalsIgnoreCase(sign);
     }
 }

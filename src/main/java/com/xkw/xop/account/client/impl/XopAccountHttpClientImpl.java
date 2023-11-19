@@ -5,6 +5,7 @@ package com.xkw.xop.account.client.impl;
 
 import com.google.gson.reflect.TypeToken;
 import com.xkw.xop.account.client.XopAccountHttpClient;
+import com.xkw.xop.account.client.hmac.XopHmacVersionEnum;
 import com.xkw.xop.account.client.request.XopAccountRequest;
 import com.xkw.xop.account.client.request.XopActiveAccountDto;
 import com.xkw.xop.account.client.request.impl.XopAccountRequestImpl;
@@ -45,8 +46,8 @@ public class XopAccountHttpClientImpl extends XopDeviceClientBase
 
     private static final Logger LOGGER = LoggerFactory.getLogger("XopAccountHttpClient");
 
-    public XopAccountHttpClientImpl(String gatewayHost, String appId, String secret, Config config) {
-        super(gatewayHost, appId, secret, config);
+    public XopAccountHttpClientImpl(String gatewayHost, String appId, String secret, Config config, XopHmacVersionEnum hmacVersionEnum) {
+        super(gatewayHost, appId, secret, config, hmacVersionEnum);
     }
 
     @Override

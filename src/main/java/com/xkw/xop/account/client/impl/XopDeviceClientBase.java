@@ -3,14 +3,16 @@
  */
 package com.xkw.xop.account.client.impl;
 
-import com.xkw.xop.account.client.request.impl.XopDeviceRequestBase;
-import com.xkw.xop.account.client.response.XopHttpResponse;
-import com.xkw.xop.account.client.utils.XopClientUtils;
 import com.xkw.xop.account.client.entity.XopDeviceToken;
-import com.xkw.xop.account.client.utils.Base64Utils;
 import com.xkw.xop.account.client.hmac.HmacConst;
 import com.xkw.xop.account.client.hmac.HmacDeviceUtils;
+import com.xkw.xop.account.client.hmac.HmacDeviceUtilsV2;
 import com.xkw.xop.account.client.hmac.HmacResult;
+import com.xkw.xop.account.client.hmac.XopHmacVersionEnum;
+import com.xkw.xop.account.client.request.impl.XopDeviceRequestBase;
+import com.xkw.xop.account.client.response.XopHttpResponse;
+import com.xkw.xop.account.client.utils.Base64Utils;
+import com.xkw.xop.account.client.utils.XopClientUtils;
 import kong.unirest.Config;
 
 import java.util.HashMap;
@@ -26,8 +28,8 @@ import static com.xkw.xop.account.client.utils.Constants.GSON;
  */
 public class XopDeviceClientBase extends XopClientBase {
 
-    public XopDeviceClientBase(String gatewayHost, String appId, String secret, Config config) {
-        super(gatewayHost, appId, secret, config);
+    public XopDeviceClientBase(String gatewayHost, String appId, String secret, Config config, XopHmacVersionEnum hmacVersionEnum) {
+        super(gatewayHost, appId, secret, config, hmacVersionEnum);
     }
 
     /**
@@ -54,8 +56,15 @@ public class XopDeviceClientBase extends XopClientBase {
             paramsMap.putAll(request.getQueryParams());
         }
         paramsMap.put(HmacConst.KEY_URL, request.getUri());
-        HmacResult result = HmacDeviceUtils.sign(appId, secret, deviceToken.getDeviceAppId(), deviceToken.getToken(),
-            deviceToken.getTimestamp(), deviceToken.getNonce(), paramsMap, bodyString);
+        HmacResult result;
+        if (XopHmacVersionEnum.V2 == hmacVersionEnum) {
+            result = HmacDeviceUtilsV2.sign(appId, secret, deviceToken.getDeviceAppId(), deviceToken.getToken()
+                , deviceToken.getTimestamp(), deviceToken.getNonce(), paramsMap, bodyString);
+        } else {
+            result = HmacDeviceUtils.sign(appId, secret, deviceToken.getDeviceAppId(), deviceToken.getToken()
+                , deviceToken.getTimestamp(), deviceToken.getNonce(), paramsMap, bodyString);
+        }
+
         Map<String, String> headerMap = getHeaderMap(deviceToken, request.getPkgTag(), result);
         return getHttpResponse(request, headerMap, bodyString, request.getCustomHeaders());
     }
